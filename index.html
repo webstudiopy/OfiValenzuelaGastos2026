@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gastos Mayo 2026 — SPYnet Valenzuela</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    /* ── BOTÓN ELIMINAR EN TABLA ── */
+    .btn-delete-row {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 30px; height: 30px;
+      border: 1px solid #f0d0d0; border-radius: 6px;
+      background: #fff5f5; color: #c0392b; cursor: pointer;
+      transition: background .15s, border-color .15s, transform .1s;
+    }
+    .btn-delete-row:hover { background: #ffe0e0; border-color: #e74c3c; transform: scale(1.08); }
+
+    /* ── PILLS MEDIO DE PAGO ── */
+    .medio-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 20px;
+      font-size: 11px; font-weight: 600; white-space: nowrap;
+    }
+    .medio-pill.transferencia { background: #e8f1fb; color: #2563b0; }
+    .medio-pill.efectivo      { background: #e8f7ee; color: #1a7a45; }
+
+    /* ── SELECTOR MEDIO EN MODAL ── */
+    .medio-toggle {
+      display: flex; gap: 8px; margin-top: 4px;
+    }
+    .medio-toggle label {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 9px 10px; border-radius: 8px; cursor: pointer;
+      border: 1.5px solid #dde1ea; font-size: 13px; font-weight: 600;
+      transition: all .15s; color: #666;
+    }
+    .medio-toggle input[type="radio"] { display: none; }
+    .medio-toggle input[type="radio"]:checked + span {
+      /* handled via JS class */
+    }
+    .medio-toggle label.selected-transf { border-color: #378ADD; background: #e8f1fb; color: #2563b0; }
+    .medio-toggle label.selected-efect  { border-color: #27ae60; background: #e8f7ee; color: #1a7a45; }
+
+    /* ── FILTRO MEDIO ── */
+    .filter-medio-wrap { display: flex; align-items: center; gap: 6px; }
+    .filter-medio-wrap select {
+      padding: 6px 10px; border-radius: 8px; border: 1.5px solid #dde1ea;
+      font-size: 12px; font-weight: 600; color: #444; background: #fff; cursor: pointer;
+      outline: none;
+    }
+
+    /* ── MODAL ELIMINAR ── */
+    .modal-delete {
+      max-width: 420px; width: 100%; border-radius: 16px; padding: 32px;
+      background: #fff; box-shadow: 0 20px 60px rgba(0,0,0,.18); position: relative;
+    }
+    .modal-delete-icon {
+      width: 52px; height: 52px; border-radius: 14px; background: #fff0f0;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px; color: #c0392b;
+    }
+    .modal-delete h3 { text-align: center; font-size: 17px; font-weight: 700; margin: 0 0 6px; color: #1a1a2e; }
+    .modal-delete .modal-delete-sub { text-align: center; font-size: 13px; color: #888; margin-bottom: 20px; }
+    .delete-info-card {
+      background: #f8f9fc; border: 1px solid #e8eaf0; border-radius: 10px;
+      padding: 14px 16px; margin-bottom: 20px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px;
+    }
+    .delete-info-card .di-row { display: flex; flex-direction: column; gap: 2px; }
+    .delete-info-card .di-label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+    .delete-info-card .di-val { font-size: 13px; font-weight: 600; color: #1a1a2e; }
+    .delete-info-card .di-val.monto { color: #c0392b; font-family: 'DM Mono', monospace; }
+    .delete-pass-label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 6px; display: block; }
+    .delete-pass-wrap input {
+      width: 100%; padding: 10px 14px; border: 1.5px solid #dde1ea; border-radius: 8px;
+      font-size: 14px; font-family: 'DM Mono', monospace; outline: none;
+      transition: border-color .2s, box-shadow .2s; box-sizing: border-box; letter-spacing: .08em;
+    }
+    .delete-pass-wrap input:focus { border-color: #378ADD; box-shadow: 0 0 0 3px rgba(55,138,221,.12); }
+    .delete-pass-wrap input.input-error { border-color: #e74c3c; box-shadow: 0 0 0 3px rgba(231,76,60,.12); }
+    .delete-error-msg { display: none; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: #c0392b; font-weight: 500; }
+    .modal-delete-actions { display: flex; gap: 10px; margin-top: 22px; }
+    .modal-delete-actions .btn-ghost {
+      flex: 1; padding: 10px; border: 1.5px solid #dde1ea; border-radius: 8px;
+      background: #fff; font-size: 14px; font-weight: 600; color: #555; cursor: pointer; transition: background .15s;
+    }
+    .modal-delete-actions .btn-ghost:hover { background: #f5f5f5; }
+    .modal-delete-actions .btn-danger {
+      flex: 1; padding: 10px; border: none; border-radius: 8px;
+      background: #c0392b; font-size: 14px; font-weight: 700; color: #fff; cursor: pointer;
+      transition: background .15s, transform .1s;
+    }
+    .modal-delete-actions .btn-danger:hover { background: #a93226; transform: translateY(-1px); }
+    .modal-delete-actions .btn-danger:active { transform: translateY(0); }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+    .shake { animation: shake .4s ease; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="logo">
+          <div class="logo-icon">S</div>
+          <div>
+            <div class="logo-name">SPYnet</div>
+            <div class="logo-sub">Valenzuela</div>
+          </div>
+        </div>
+        <nav class="nav">
+          <a href="#dashboard" class="nav-item active" data-section="dashboard">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Dashboard
+          </a>
+          <a href="#gastos" class="nav-item" data-section="gastos">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Detalle gastos
+          </a>
+        </nav>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="period-badge">Mayo 2026</div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+
+      <!-- ===== DASHBOARD ===== -->
+      <section id="dashboard" class="section active">
+        <div class="page-header">
+          <div>
+            <h1>Dashboard</h1>
+            <p class="page-sub">Resumen financiero · Mayo 2026</p>
+          </div>
+        </div>
+        <div class="metrics" id="metricsEl"></div>
+        <div class="charts-grid">
+          <div class="chart-card wide">
+            <div class="chart-card-head">
+              <div>
+                <div class="chart-title">Gastos por fecha</div>
+                <div class="chart-sub">Monto total gastado por día</div>
+              </div>
+            </div>
+            <div class="chart-wrap" style="height:240px">
+              <canvas id="barChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-head">
+              <div class="chart-title">Por categoría</div>
+              <div class="chart-sub">Distribución porcentual</div>
+            </div>
+            <div class="chart-wrap" style="height:200px">
+              <canvas id="donutChart"></canvas>
+            </div>
+            <div class="donut-legend" id="donutLegend"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-head">
+              <div class="chart-title">Top categorías</div>
+              <div class="chart-sub">Ranking por monto</div>
+            </div>
+            <div class="bar-list" id="barListEl"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== GASTOS MAYO ===== -->
+      <section id="transferencias" class="section">
+        <div class="page-header">
+          <div>
+            <h1>Gastos Mayo 2026</h1>
+            <p class="page-sub">Pagos realizados</p>
+          </div>
+          <button class="btn-primary" onclick="App.abrirModalTransferencia()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nuevo pago
+          </button>
+        </div>
+        <div class="metrics" id="transMetricsEl"></div>
+        <div class="table-card">
+          <div class="table-card-head">
+            <div class="table-title">Listado de pagos</div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <div class="filter-medio-wrap">
+                <select id="filterMedio" onchange="App.filtrarTransferencias()">
+                  <option value="">Todos los medios</option>
+                  <option value="transferencia">🏦 Transferencia</option>
+                  <option value="efectivo">💵 Efectivo</option>
+                </select>
+              </div>
+              <div class="search-wrap">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="searchTrans" placeholder="Buscar persona..." oninput="App.filtrarTransferencias()">
+              </div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Persona</th>
+                  <th>Concepto</th>
+                  <th>Monto</th>
+                  <th>Medio</th>
+                  <th>Comprobante</th>
+                  <th>Estado</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="transTbody"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="transPag"></div>
+        </div>
+      </section>
+
+      <!-- ===== DETALLE GASTOS ===== -->
+      <section id="gastos" class="section">
+        <div class="page-header">
+          <div>
+            <h1>Detalle de gastos</h1>
+            <p class="page-sub">Todas las transacciones del período</p>
+          </div>
+          <div class="filter-row">
+            <select id="filterCat" onchange="App.filtrarGastos()">
+              <option value="">Todas las categorías</option>
+            </select>
+            <div class="search-wrap">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="searchGastos" placeholder="Buscar..." oninput="App.filtrarGastos()">
+            </div>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-wrap">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Fecha</th><th>Categoría</th><th>Detalle</th><th>Monto</th><th>Factura</th>
+                </tr>
+              </thead>
+              <tbody id="gastosTbody"></tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3" style="font-weight:600;padding:12px 10px">Total filtrado</td>
+                  <td id="gastosTotalFoot" style="font-weight:600;padding:12px 10px;font-variant-numeric:tabular-nums"></td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div class="pagination" id="gastosPag"></div>
+        </div>
+      </section>
+
+      <!-- ===== FACTURAS ===== -->
+      <section id="facturas" class="section">
+        <div class="page-header">
+          <div>
+            <h1>Facturas y comprobantes</h1>
+            <p class="page-sub">Respaldo documental de gastos</p>
+          </div>
+          <button class="btn-primary" onclick="document.getElementById('fileUpload').click()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Subir factura
+          </button>
+          <input type="file" id="fileUpload" multiple accept="image/*,.pdf" style="display:none" onchange="App.subirFacturas(this.files)">
+        </div>
+        <div class="upload-zone" id="uploadZone" ondragover="event.preventDefault()" ondrop="App.dropFacturas(event)">
+          <div class="upload-icon">
+            <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div class="upload-text">Arrastrá facturas acá o <span class="upload-link" onclick="document.getElementById('fileUpload').click()">seleccioná archivos</span></div>
+          <div class="upload-sub">JPG, PNG, PDF — hasta 10 MB por archivo</div>
+        </div>
+        <div class="facturas-grid" id="facturasGrid"></div>
+        <div id="facturasEmpty" class="empty-state">
+          <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24" opacity=".3"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <p>Aún no hay facturas cargadas.<br>Subí la primera desde el botón de arriba.</p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL IMAGEN -->
+  <div class="modal-overlay" id="modalOverlay" onclick="App.cerrarModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="App.cerrarModal()">✕</button>
+      <img id="modalImg" src="" alt="">
+      <div id="modalCaption" class="modal-caption"></div>
+    </div>
+  </div>
+
+  <!-- MODAL NUEVO PAGO -->
+  <div class="modal-overlay" id="modalTransOverlay" onclick="App.cerrarModalTrans()">
+    <div class="modal-box modal-form" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="App.cerrarModalTrans()">✕</button>
+      <h3 class="modal-title">Nuevo pago</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="tf_fecha">
+        </div>
+        <div class="form-group">
+          <label>Persona / Destinatario</label>
+          <input type="text" id="tf_persona" placeholder="Nombre completo">
+        </div>
+        <div class="form-group">
+          <label>Concepto</label>
+          <input type="text" id="tf_concepto" placeholder="Ej: Sueldo mayo">
+        </div>
+        <div class="form-group">
+          <label>Monto (Gs.)</label>
+          <input type="number" id="tf_monto" placeholder="0">
+        </div>
+        <div class="form-group full">
+          <label>Medio de pago</label>
+          <div class="medio-toggle">
+            <label id="lbl_transf" class="selected-transf" onclick="App.seleccionarMedio('transferencia')">
+              <input type="radio" name="tf_medio_r" id="tf_medio" value="transferencia" checked>
+              <span>🏦 Transferencia</span>
+            </label>
+            <label id="lbl_efect" onclick="App.seleccionarMedio('efectivo')">
+              <input type="radio" name="tf_medio_r" value="efectivo">
+              <span>💵 Efectivo</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-group full">
+          <label>Comprobante (imagen)</label>
+          <input type="file" id="tf_file" accept="image/*,.pdf">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-ghost" onclick="App.cerrarModalTrans()">Cancelar</button>
+        <button class="btn-primary" onclick="App.guardarTransferencia()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ELIMINAR -->
+  <div class="modal-overlay" id="modalDeleteOverlay" onclick="App.cerrarModalDelete()">
+    <div class="modal-delete" onclick="event.stopPropagation()">
+      <div class="modal-delete-icon">
+        <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+          <path d="M10 11v6M14 11v6"/>
+          <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+        </svg>
+      </div>
+      <h3>Eliminar registro</h3>
+      <p class="modal-delete-sub">Esta acción no se puede deshacer. Revisá los datos antes de confirmar.</p>
+      <div class="delete-info-card">
+        <div class="di-row">
+          <span class="di-label">Persona</span>
+          <span class="di-val" id="deleteInfoPersona">—</span>
+        </div>
+        <div class="di-row">
+          <span class="di-label">Fecha</span>
+          <span class="di-val" id="deleteInfoFecha">—</span>
+        </div>
+        <div class="di-row">
+          <span class="di-label">Concepto</span>
+          <span class="di-val" id="deleteInfoConcepto">—</span>
+        </div>
+        <div class="di-row">
+          <span class="di-label">Monto</span>
+          <span class="di-val monto" id="deleteInfoMonto">—</span>
+        </div>
+        <div class="di-row" style="grid-column:1/-1">
+          <span class="di-label">Medio de pago</span>
+          <span class="di-val" id="deleteInfoMedio">—</span>
+        </div>
+      </div>
+      <label class="delete-pass-label">
+        <svg style="display:inline;vertical-align:-3px;margin-right:4px" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        Contraseña de autorización
+      </label>
+      <div class="delete-pass-wrap">
+        <input type="password" id="deletePassword" placeholder="Ingresá la contraseña" autocomplete="off">
+      </div>
+      <div class="delete-error-msg" id="deleteError">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Contraseña incorrecta. Intentá de nuevo.
+      </div>
+      <div class="modal-delete-actions">
+        <button class="btn-ghost" onclick="App.cerrarModalDelete()">Cancelar</button>
+        <button class="btn-danger" onclick="App.ejecutarEliminarTransferencia()">
+          <svg style="margin-right:6px;vertical-align:-2px" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+
+  <script>
+    // Toggle visual del selector de medio de pago
+    App.seleccionarMedio = function(medio) {
+      document.getElementById("tf_medio").value = medio;
+      document.getElementById("lbl_transf").className = medio === "transferencia" ? "selected-transf" : "";
+      document.getElementById("lbl_efect").className  = medio === "efectivo"      ? "selected-efect"  : "";
+    };
+  </script>
+</body>
+</html>
